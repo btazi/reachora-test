@@ -1,3 +1,4 @@
+require "pry"
 class FoodChain
   def self.song
     animals = [\
@@ -11,12 +12,7 @@ class FoodChain
       {name: "horse", expression: nil, dead: true}\
     ]
 
-    verses = animals.each_with_index.map { |animal, index|
-      additional_lines = {additional_lines: index}
-      Animal.new(animal.merge(additional_lines)).verse
-    }
-
-    verses
+    Animal.verses(animals)
   end
 end
 
@@ -27,22 +23,56 @@ class Animal
     end
   end
 
-  attr_accessor :name, :expression, :additional_lines, :dead
+  attr_accessor :name, :expression, :additional_lines, :dead, :previous_animals
+
+  def previous_lines
+    lines = []
+    first_animal_index = 0
+    second_animal_index = 1
+
+    list = previous_animals
+    while second_animal_index < previous_animals.count
+      first_animal = list[first_animal_index].name
+      second_animal = list[second_animal_index].name
+      spider_special = first_animal == "spider" ? " that wriggled and jiggled and tickled inside her" : nil
+
+      lines.push "She swallowed the #{second_animal} to catch the #{first_animal}#{spider_special}."
+
+      first_animal_index += 1
+      second_animal_index += 1
+    end
+    lines.reverse.join("\n")
+  end
 
   def end_line
-    if @dead
+    if dead
       "She's dead, of course!"
     else
-      "I don't know why she swallowed the #{@name}. Perhaps she'll die."
+      "I don't know why she swallowed the fly. Perhaps she'll die."
     end
   end
 
   def verse
-    puts "I know an old lady who swallowed a #{@name}."
-    puts @expression if @expression
-    puts end_line
-    puts "\n"
+    text = ""
+    text += "I know an old lady who swallowed a #{name}.\n"
+    text += expression + "\n" if expression
+    if previous_animals.class == Array && previous_animals.length > 0
+      text += previous_lines + "\n" if previous_animals
+    end
+    text += end_line + "\n"
+    text
+  end
+
+  def self.verses(animals)
+    verses = animals.each_with_index.map { |animal, index|
+      additional_lines = {additional_lines: index}
+      previous_animals = animals[0..index].map { |a| Animal.new(a) } unless index == 0 || index + 1 == animals.count
+      previous_animals = {previous_animals: previous_animals}
+      attributes = animal.merge(additional_lines).merge(previous_animals)
+      Animal.new(attributes).verse
+    }
+    verses.join("\n")
   end
 end
 
-FoodChain.song
+puts FoodChain.song
